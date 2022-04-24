@@ -95,8 +95,17 @@ const createWindow = async () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
+    // if (process.env.START_MINIMIZED) {
+    //   mainWindow.minimize();
+    // } else {
+    //   mainWindow.show();
+    // }
+
+    if (
+      process.platform === 'darwin' &&
+      process.env.NODE_ENV === 'production'
+    ) {
+      mainWindow.hide();
     } else {
       mainWindow.show();
     }
@@ -156,6 +165,18 @@ app
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
+
+      if (
+        process.platform === 'darwin' &&
+        process.env.NODE_ENV === 'production'
+      ) {
+        app.dock.hide();
+
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          openAsHidden: true,
+        });
+      }
     });
   })
   .catch(console.log);

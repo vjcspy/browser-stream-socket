@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, desktopCapturer } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -57,6 +57,14 @@ const installExtensions = async () => {
 };
 
 const createWindow = async () => {
+  if (mainWindow) {
+    try {
+      mainWindow.close();
+    } catch (e) {
+      console.log('close main window error', e);
+    }
+  }
+
   if (isDebug) {
     await installExtensions();
   }
@@ -107,6 +115,22 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
+  // Capture desktop and send to preload
+  desktopCapturer
+    .getSources({ types: ['window', 'screen'] })
+    .then(async (sources) => {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const source of sources) {
+        if (source.name === 'Entire Screen' && mainWindow) {
+          mainWindow.webContents.send('SET_SOURCE', source.id);
+          return;
+        }
+      }
+    })
+    .catch((e) => {
+      console.log(e);
+    });
+
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
@@ -135,3 +159,18 @@ app
     });
   })
   .catch(console.log);
+
+let timeout: NodeJS.Timeout;
+const watchStreaming = () => {
+  if (timeout) {
+    clearTimeout(timeout);
+  }
+
+  timeout = setTimeout(() => {
+    createWindow();
+  }, 30000);
+};
+
+ipcMain.on('streaming_data', async () => {
+  watchStreaming();
+});

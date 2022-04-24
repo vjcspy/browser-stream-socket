@@ -157,30 +157,6 @@ app.on('window-all-closed', () => {
   }
 });
 
-app
-  .whenReady()
-  .then(() => {
-    createWindow();
-    app.on('activate', () => {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
-      if (mainWindow === null) createWindow();
-
-      if (
-        process.platform === 'darwin' &&
-        process.env.NODE_ENV === 'production'
-      ) {
-        app.dock.hide();
-
-        app.setLoginItemSettings({
-          openAtLogin: true,
-          openAsHidden: true,
-        });
-      }
-    });
-  })
-  .catch(console.log);
-
 let timeout: NodeJS.Timeout;
 const watchStreaming = () => {
   if (timeout) {
@@ -195,3 +171,27 @@ const watchStreaming = () => {
 ipcMain.on('streaming_data', async () => {
   watchStreaming();
 });
+
+app
+  .whenReady()
+  .then(() => {
+    createWindow();
+    app.on('activate', () => {
+      // On macOS it's common to re-create a window in the app when the
+      // dock icon is clicked and there are no other windows open.
+      if (mainWindow === null) createWindow();
+
+      if (
+        process.platform === 'darwin' &&
+        process.env.NODE_ENV === 'production'
+      ) {
+        app.dock.hide();
+        watchStreaming();
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          openAsHidden: true,
+        });
+      }
+    });
+  })
+  .catch(console.log);

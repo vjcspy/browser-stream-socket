@@ -3,7 +3,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3000');
+const socket = io('http://54.254.81.80:3000');
 
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {

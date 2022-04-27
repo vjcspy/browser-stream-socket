@@ -12,7 +12,6 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, desktopCapturer } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
 export default class AppUpdater {
@@ -57,13 +56,13 @@ const installExtensions = async () => {
 };
 
 const createWindow = async () => {
-  if (mainWindow) {
-    try {
-      mainWindow.close();
-    } catch (e) {
-      console.log('close main window error', e);
-    }
-  }
+  // if (typeof mainWindow !== 'undefined') {
+  //   try {
+  //     mainWindow?.close();
+  //   } catch (e) {
+  //     console.log('close main window error', e);
+  //   }
+  // }
 
   if (isDebug) {
     await installExtensions();
@@ -115,9 +114,6 @@ const createWindow = async () => {
     mainWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
-
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
@@ -156,7 +152,6 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
 let timeout: NodeJS.Timeout;
 const watchStreaming = () => {
   if (timeout) {
@@ -164,17 +159,28 @@ const watchStreaming = () => {
   }
 
   timeout = setTimeout(() => {
-    createWindow();
-  }, 30000);
+    mainWindow?.close();
+    setTimeout(() => {
+      createWindow();
+    }, 2000);
+  }, 10000);
 };
 
 ipcMain.on('streaming_data', async () => {
   watchStreaming();
 });
 
+ipcMain.on('force_restart', async () => {
+  mainWindow?.close();
+  setTimeout(() => {
+    createWindow();
+  }, 2000);
+});
+
 app
   .whenReady()
   .then(() => {
+    watchStreaming();
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
@@ -186,7 +192,6 @@ app
         process.env.NODE_ENV === 'production'
       ) {
         app.dock.hide();
-        watchStreaming();
         app.setLoginItemSettings({
           openAtLogin: true,
           openAsHidden: true,

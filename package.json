@@ -236,6 +236,7 @@
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",
+    "rxjs": "^7.5.5",
     "socket.io-client": "^4.5.0"
   },
   "devEngines": {
